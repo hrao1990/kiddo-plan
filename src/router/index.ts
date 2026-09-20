@@ -45,7 +45,6 @@ const router = createRouter({
           path: 'admin/users',
           name: 'admin-users',
           component: () => import('@/pages/admin/Users.vue'),
-          meta: { admin: true },
         },
       ],
     },
@@ -66,9 +65,6 @@ router.beforeEach(async (to) => {
     }
   }
   if (to.meta.guest && auth.isLoggedIn) {
-    return { name: 'dashboard' }
-  }
-  if (to.meta.admin && auth.user?.role !== 'admin') {
     return { name: 'dashboard' }
   }
 })

@@ -55,31 +55,31 @@ CREATE INDEX IF NOT EXISTS idx_score_logs_created_at ON score_logs(created_at);
 `
 
 async function ensureSchema(env: Bindings) {
-  const flag = await env.KV.get('schema_initialized')
+  const flag = await env.kv.get('schema_initialized')
   if (flag) return
 
   const statements = SCHEMA_SQL.split(';').filter(s => s.trim())
   for (const stmt of statements) {
-    await env.DB.prepare(stmt).run()
+    await env.db.prepare(stmt).run()
   }
 
-  await env.KV.put('schema_initialized', 'true')
+  await env.kv.put('schema_initialized', 'true')
 }
 
 async function ensureAdmin(env: Bindings) {
-  const flag = await env.KV.get('admin_initialized')
+  const flag = await env.kv.get('admin_initialized')
   if (flag) return
 
-  const row = await env.DB.prepare("SELECT COUNT(*) as count FROM users WHERE role = 'admin'").first<{ count: number }>()
+  const row = await env.db.prepare("SELECT COUNT(*) as count FROM users WHERE role = 'admin'").first<{ count: number }>()
   if ((!row || row.count === 0) && env.ADMIN_USERNAME && env.ADMIN_PASSWORD) {
     const salt = generateSalt()
     const passwordHash = await hashPassword(env.ADMIN_PASSWORD, salt)
-    await env.DB.prepare(
+    await env.db.prepare(
       'INSERT OR IGNORE INTO users (username, password_hash, salt, role) VALUES (?, ?, ?, ?)'
     ).bind(env.ADMIN_USERNAME, passwordHash, salt, 'admin').run()
   }
 
-  await env.KV.put('admin_initialized', 'true')
+  await env.kv.put('admin_initialized', 'true')
 }
 
 function generateSalt(): string {
@@ -126,12 +126,12 @@ export default {
       return app.fetch(request, env, ctx)
     }
 
-    const assetResponse = await env.ASSETS.fetch(request)
+    const assetResponse = await env.assets.fetch(request)
     if (assetResponse.status === 200) {
       return assetResponse
     }
 
-    const indexResponse = await env.ASSETS.fetch(new Request(new URL('/', url)))
+    const indexResponse = await env.assets.fetch(new Request(new URL('/', url)))
     return indexResponse
   },
 }

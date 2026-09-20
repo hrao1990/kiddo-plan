@@ -13,9 +13,14 @@ pointsRoutes.get('/', async (c) => {
   const childId = c.req.query('child_id')
   const dateFrom = c.req.query('date_from')
   const dateTo = c.req.query('date_to')
+  const tzOffset = parseInt(c.req.query('tz_offset') || '0')
   const page = parseInt(c.req.query('page') || '1')
   const pageSize = parseInt(c.req.query('pageSize') || '20')
   const offset = (page - 1) * pageSize
+
+  const tzSign = tzOffset >= 0 ? '+' : '-'
+  const tzMinutes = Math.abs(tzOffset)
+  const tzExpr = `'${tzSign}${tzMinutes} minutes'`
 
   let query = `
     SELECT sl.id, sl.name, sl.score, sl.note, sl.created_at, sl.preset_id,
@@ -32,19 +37,19 @@ pointsRoutes.get('/', async (c) => {
   }
 
   if (dateFrom) {
-    query += ' AND date(sl.created_at) >= date(?)'
+    query += ` AND date(sl.created_at, ${tzExpr}) >= date(?)`
     params.push(dateFrom)
   }
 
   if (dateTo) {
-    query += ' AND date(sl.created_at) <= date(?)'
+    query += ` AND date(sl.created_at, ${tzExpr}) <= date(?)`
     params.push(dateTo)
   }
 
   query += ' ORDER BY sl.created_at DESC LIMIT ? OFFSET ?'
   params.push(pageSize, offset)
 
-  const { results } = await c.env.DB.prepare(query).bind(...params).all()
+  const { results } = await c.env.db.prepare(query).bind(...params).all()
 
   return c.json({ records: results })
 })
@@ -57,7 +62,7 @@ pointsRoutes.post('/', async (c) => {
     return c.json({ message: 'Child ID, name and score required' }, 400)
   }
 
-  const child = await c.env.DB.prepare(
+  const child = await c.env.db.prepare(
     'SELECT id FROM children WHERE id = ? AND user_id = ?'
   ).bind(child_id, userId).first()
 
@@ -65,7 +70,7 @@ pointsRoutes.post('/', async (c) => {
     return c.json({ message: 'Child not found' }, 404)
   }
 
-  await c.env.DB.prepare(
+  await c.env.db.prepare(
     'INSERT INTO score_logs (child_id, user_id, preset_id, name, score, note) VALUES (?, ?, ?, ?, ?, ?)'
   ).bind(child_id, userId, preset_id || null, name, score, note || null).run()
 
@@ -76,7 +81,7 @@ pointsRoutes.delete('/:id', async (c) => {
   const userId = c.get('userId')
   const id = parseInt(c.req.param('id'))
 
-  const log = await c.env.DB.prepare(
+  const log = await c.env.db.prepare(
     `SELECT sl.id FROM score_logs sl
      JOIN children c ON sl.child_id = c.id
      WHERE sl.id = ? AND c.user_id = ?`
@@ -86,7 +91,7 @@ pointsRoutes.delete('/:id', async (c) => {
     return c.json({ message: 'Record not found' }, 404)
   }
 
-  await c.env.DB.prepare('DELETE FROM score_logs WHERE id = ?').bind(id).run()
+  await c.env.db.prepare('DELETE FROM score_logs WHERE id = ?').bind(id).run()
 
   return c.json({ message: 'Record deleted' })
 })

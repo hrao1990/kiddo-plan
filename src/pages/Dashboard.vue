@@ -85,6 +85,7 @@ import {
 import VChart from 'vue-echarts'
 import { useChildrenStore } from '@/stores/children'
 import request from '@/utils/request'
+import { getTzOffset } from '@/utils/date'
 
 use([CanvasRenderer, LineChart, PieChart, BarChart, TitleComponent, TooltipComponent, LegendComponent, GridComponent])
 
@@ -134,9 +135,10 @@ async function fetchDashboard() {
   const childId = childrenStore.currentChildId
   if (!childId) return
   try {
+    const tz = getTzOffset()
     const [ov, tr, br, rc] = await Promise.all([
-      request.get(`/dashboard/child/${childId}/overview`) as Promise<{ total: number; today: number; week: number; month: number }>,
-      request.get(`/dashboard/child/${childId}/trend`, { params: { period: trendPeriod.value } }) as Promise<{ data: { date: string; score: number }[] }>,
+      request.get(`/dashboard/child/${childId}/overview`, { params: { tz_offset: tz } }) as Promise<{ total: number; today: number; week: number; month: number }>,
+      request.get(`/dashboard/child/${childId}/trend`, { params: { period: trendPeriod.value, tz_offset: tz } }) as Promise<{ data: { date: string; score: number }[] }>,
       request.get(`/dashboard/child/${childId}/breakdown`) as Promise<{ data: { name: string; value: number }[] }>,
       request.get('/points', { params: { child_id: childId, pageSize: 10 } }) as Promise<{ records: { id: number; name: string; score: number; child_name: string }[] }>,
     ])

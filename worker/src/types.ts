@@ -1,7 +1,7 @@
 export type Bindings = {
-  DB: D1Database
-  KV: KVNamespace
-  ASSETS: Fetcher
+  db: D1Database
+  kv: KVNamespace
+  assets: Fetcher
   JWT_SECRET: string
   ADMIN_USERNAME: string
   ADMIN_PASSWORD: string

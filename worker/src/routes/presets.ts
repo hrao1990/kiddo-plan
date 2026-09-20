@@ -10,7 +10,7 @@ presetsRoutes.use('*', authMiddleware)
 
 presetsRoutes.get('/', async (c) => {
   const userId = c.get('userId')
-  const { results } = await c.env.DB.prepare(
+  const { results } = await c.env.db.prepare(
     'SELECT id, name, score, category, created_at FROM presets WHERE user_id = ? ORDER BY score DESC'
   ).bind(userId).all()
 
@@ -25,7 +25,7 @@ presetsRoutes.post('/', async (c) => {
     return c.json({ message: 'Name and score required' }, 400)
   }
 
-  await c.env.DB.prepare(
+  await c.env.db.prepare(
     'INSERT INTO presets (user_id, name, score, category) VALUES (?, ?, ?, ?)'
   ).bind(userId, name, score, category || 'custom').run()
 
@@ -37,7 +37,7 @@ presetsRoutes.put('/:id', async (c) => {
   const id = parseInt(c.req.param('id'))
   const { name, score, category } = await c.req.json()
 
-  const preset = await c.env.DB.prepare(
+  const preset = await c.env.db.prepare(
     'SELECT id FROM presets WHERE id = ? AND user_id = ?'
   ).bind(id, userId).first()
 
@@ -45,7 +45,7 @@ presetsRoutes.put('/:id', async (c) => {
     return c.json({ message: 'Preset not found' }, 404)
   }
 
-  await c.env.DB.prepare(
+  await c.env.db.prepare(
     'UPDATE presets SET name = ?, score = ?, category = ? WHERE id = ?'
   ).bind(name, score, category || 'custom', id).run()
 
@@ -56,7 +56,7 @@ presetsRoutes.delete('/:id', async (c) => {
   const userId = c.get('userId')
   const id = parseInt(c.req.param('id'))
 
-  const preset = await c.env.DB.prepare(
+  const preset = await c.env.db.prepare(
     'SELECT id FROM presets WHERE id = ? AND user_id = ?'
   ).bind(id, userId).first()
 
@@ -64,8 +64,8 @@ presetsRoutes.delete('/:id', async (c) => {
     return c.json({ message: 'Preset not found' }, 404)
   }
 
-  await c.env.DB.prepare('UPDATE score_logs SET preset_id = NULL WHERE preset_id = ?').bind(id).run()
-  await c.env.DB.prepare('DELETE FROM presets WHERE id = ?').bind(id).run()
+  await c.env.db.prepare('UPDATE score_logs SET preset_id = NULL WHERE preset_id = ?').bind(id).run()
+  await c.env.db.prepare('DELETE FROM presets WHERE id = ?').bind(id).run()
 
   return c.json({ message: 'Preset deleted' })
 })

@@ -11,8 +11,9 @@ dashboardRoutes.use('*', authMiddleware)
 dashboardRoutes.get('/child/:id/overview', async (c) => {
   const userId = c.get('userId')
   const childId = parseInt(c.req.param('id'))
+  const tzOffset = parseInt(c.req.query('tz_offset') || '0')
 
-  const child = await c.env.DB.prepare(
+  const child = await c.env.db.prepare(
     'SELECT id FROM children WHERE id = ? AND user_id = ?'
   ).bind(childId, userId).first()
 
@@ -20,20 +21,24 @@ dashboardRoutes.get('/child/:id/overview', async (c) => {
     return c.json({ message: 'Child not found' }, 404)
   }
 
-  const totalRow = await c.env.DB.prepare(
+  const tzSign = tzOffset >= 0 ? '+' : '-'
+  const tzMinutes = Math.abs(tzOffset)
+  const tzExpr = `'${tzSign}${tzMinutes} minutes'`
+
+  const totalRow = await c.env.db.prepare(
     'SELECT COALESCE(SUM(score), 0) as total FROM score_logs WHERE child_id = ?'
   ).bind(childId).first<{ total: number }>()
 
-  const todayRow = await c.env.DB.prepare(
-    "SELECT COALESCE(SUM(score), 0) as today FROM score_logs WHERE child_id = ? AND date(created_at) = date('now')"
+  const todayRow = await c.env.db.prepare(
+    `SELECT COALESCE(SUM(score), 0) as today FROM score_logs WHERE child_id = ? AND date(created_at, ${tzExpr}) = date('now', ${tzExpr})`
   ).bind(childId).first<{ today: number }>()
 
-  const weekRow = await c.env.DB.prepare(
-    "SELECT COALESCE(SUM(score), 0) as week FROM score_logs WHERE child_id = ? AND created_at >= datetime('now', '-7 days')"
+  const weekRow = await c.env.db.prepare(
+    `SELECT COALESCE(SUM(score), 0) as week FROM score_logs WHERE child_id = ? AND created_at >= datetime('now', ${tzExpr}, '-7 days')`
   ).bind(childId).first<{ week: number }>()
 
-  const monthRow = await c.env.DB.prepare(
-    "SELECT COALESCE(SUM(score), 0) as month FROM score_logs WHERE child_id = ? AND created_at >= datetime('now', '-30 days')"
+  const monthRow = await c.env.db.prepare(
+    `SELECT COALESCE(SUM(score), 0) as month FROM score_logs WHERE child_id = ? AND created_at >= datetime('now', ${tzExpr}, '-30 days')`
   ).bind(childId).first<{ month: number }>()
 
   return c.json({
@@ -48,8 +53,9 @@ dashboardRoutes.get('/child/:id/trend', async (c) => {
   const userId = c.get('userId')
   const childId = parseInt(c.req.param('id'))
   const period = c.req.query('period') || 'week'
+  const tzOffset = parseInt(c.req.query('tz_offset') || '0')
 
-  const child = await c.env.DB.prepare(
+  const child = await c.env.db.prepare(
     'SELECT id FROM children WHERE id = ? AND user_id = ?'
   ).bind(childId, userId).first()
 
@@ -57,14 +63,18 @@ dashboardRoutes.get('/child/:id/trend', async (c) => {
     return c.json({ message: 'Child not found' }, 404)
   }
 
+  const tzSign = tzOffset >= 0 ? '+' : '-'
+  const tzMinutes = Math.abs(tzOffset)
+  const tzExpr = `'${tzSign}${tzMinutes} minutes'`
+
   const days = period === 'month' ? 30 : 7
 
-  const { results } = await c.env.DB.prepare(
-    `SELECT date(created_at) as date, SUM(score) as score
+  const { results } = await c.env.db.prepare(
+    `SELECT date(created_at, ${tzExpr}) as date, SUM(score) as score
      FROM score_logs
-     WHERE child_id = ? AND created_at >= datetime('now', '-' || ? || ' days')
-     GROUP BY date(created_at)
-     ORDER BY date(created_at) ASC`
+     WHERE child_id = ? AND created_at >= datetime('now', ${tzExpr}, '-' || ? || ' days')
+     GROUP BY date(created_at, ${tzExpr})
+     ORDER BY date(created_at, ${tzExpr}) ASC`
   ).bind(childId, days).all<{ date: string; score: number }>()
 
   return c.json({ data: results })
@@ -74,7 +84,7 @@ dashboardRoutes.get('/child/:id/breakdown', async (c) => {
   const userId = c.get('userId')
   const childId = parseInt(c.req.param('id'))
 
-  const child = await c.env.DB.prepare(
+  const child = await c.env.db.prepare(
     'SELECT id FROM children WHERE id = ? AND user_id = ?'
   ).bind(childId, userId).first()
 
@@ -82,7 +92,7 @@ dashboardRoutes.get('/child/:id/breakdown', async (c) => {
     return c.json({ message: 'Child not found' }, 404)
   }
 
-  const { results } = await c.env.DB.prepare(
+  const { results } = await c.env.db.prepare(
     `SELECT name, SUM(score) as value
      FROM score_logs
      WHERE child_id = ?
@@ -96,7 +106,7 @@ dashboardRoutes.get('/child/:id/breakdown', async (c) => {
 dashboardRoutes.get('/ranking', async (c) => {
   const userId = c.get('userId')
 
-  const { results } = await c.env.DB.prepare(
+  const { results } = await c.env.db.prepare(
     `SELECT c.id, c.name, c.avatar,
       COALESCE((SELECT SUM(score) FROM score_logs WHERE child_id = c.id), 0) as score
      FROM children c

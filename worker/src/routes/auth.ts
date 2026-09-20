@@ -37,13 +37,13 @@ authRoutes.post('/register', async (c) => {
   }
 
   const maxUsers = parseInt(c.env.MAX_USERS || '50')
-  const row = await c.env.DB.prepare('SELECT COUNT(*) as count FROM users').first<{ count: number }>()
+  const row = await c.env.db.prepare('SELECT COUNT(*) as count FROM users').first<{ count: number }>()
   const count = row?.count || 0
   if (count >= maxUsers) {
     return c.json({ message: 'User limit reached, please contact admin' }, 400)
   }
 
-  const existing = await c.env.DB.prepare('SELECT id FROM users WHERE username = ?').bind(username).first()
+  const existing = await c.env.db.prepare('SELECT id FROM users WHERE username = ?').bind(username).first()
   if (existing) {
     return c.json({ message: 'Username already exists' }, 400)
   }
@@ -51,7 +51,7 @@ authRoutes.post('/register', async (c) => {
   const salt = generateSalt()
   const passwordHash = await hashPassword(password, salt)
 
-  await c.env.DB.prepare(
+  await c.env.db.prepare(
     'INSERT INTO users (username, password_hash, salt, role) VALUES (?, ?, ?, ?)'
   ).bind(username, passwordHash, salt, 'user').run()
 
@@ -65,7 +65,7 @@ authRoutes.post('/login', async (c) => {
     return c.json({ message: 'Username and password required' }, 400)
   }
 
-  const user = await c.env.DB.prepare(
+  const user = await c.env.db.prepare(
     'SELECT id, username, password_hash, salt, role, is_disabled FROM users WHERE username = ?'
   ).bind(username).first<{ id: number; username: string; password_hash: string; salt: string; role: string; is_disabled: number }>()
 
@@ -96,7 +96,7 @@ authRoutes.post('/login', async (c) => {
 
 authRoutes.get('/me', authMiddleware, async (c) => {
   const userId = c.get('userId')
-  const user = await c.env.DB.prepare(
+  const user = await c.env.db.prepare(
     'SELECT id, username, role FROM users WHERE id = ?'
   ).bind(userId).first<{ id: number; username: string; role: string }>()
 
@@ -105,6 +105,49 @@ authRoutes.get('/me', authMiddleware, async (c) => {
   }
 
   return c.json({ user })
+})
+
+authRoutes.put('/password', authMiddleware, async (c) => {
+  const userId = c.get('userId')
+  const { oldPassword, newPassword } = await c.req.json()
+
+  if (!oldPassword || !newPassword) {
+    return c.json({ message: 'Old and new password required' }, 400)
+  }
+
+  if (newPassword.length < 8) {
+    return c.json({ message: 'Password must be at least 8 characters' }, 400)
+  }
+
+  let types = 0
+  if (/[a-z]/.test(newPassword)) types++
+  if (/[A-Z]/.test(newPassword)) types++
+  if (/[0-9]/.test(newPassword)) types++
+  if (/[^a-zA-Z0-9]/.test(newPassword)) types++
+  if (types < 2) {
+    return c.json({ message: 'Password must include at least 2 of: uppercase, lowercase, digits, symbols' }, 400)
+  }
+
+  const user = await c.env.db.prepare(
+    'SELECT id, password_hash, salt FROM users WHERE id = ?'
+  ).bind(userId).first<{ id: number; password_hash: string; salt: string }>()
+
+  if (!user) {
+    return c.json({ message: 'User not found' }, 404)
+  }
+
+  const oldHash = await hashPassword(oldPassword, user.salt)
+  if (oldHash !== user.password_hash) {
+    return c.json({ message: 'Old password is incorrect' }, 400)
+  }
+
+  const salt = generateSalt()
+  const passwordHash = await hashPassword(newPassword, salt)
+  await c.env.db.prepare(
+    'UPDATE users SET password_hash = ?, salt = ? WHERE id = ?'
+  ).bind(passwordHash, salt, userId).run()
+
+  return c.json({ message: 'Password updated' })
 })
 
 export { authRoutes }

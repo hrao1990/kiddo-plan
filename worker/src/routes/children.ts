@@ -10,7 +10,7 @@ childrenRoutes.use('*', authMiddleware)
 
 childrenRoutes.get('/', async (c) => {
   const userId = c.get('userId')
-  const { results } = await c.env.DB.prepare(
+  const { results } = await c.env.db.prepare(
     `SELECT c.id, c.name, c.avatar, c.created_at,
       COALESCE((SELECT SUM(score) FROM score_logs WHERE child_id = c.id), 0) as score
      FROM children c WHERE c.user_id = ? ORDER BY c.created_at DESC`
@@ -28,7 +28,7 @@ childrenRoutes.post('/', async (c) => {
   }
 
   const maxChildren = parseInt(c.env.MAX_CHILDREN_PER_USER || '5')
-  const row = await c.env.DB.prepare(
+  const row = await c.env.db.prepare(
     'SELECT COUNT(*) as count FROM children WHERE user_id = ?'
   ).bind(userId).first<{ count: number }>()
   const count = row?.count || 0
@@ -37,7 +37,7 @@ childrenRoutes.post('/', async (c) => {
     return c.json({ message: 'Maximum number of children reached' }, 400)
   }
 
-  await c.env.DB.prepare(
+  await c.env.db.prepare(
     'INSERT INTO children (user_id, name, avatar) VALUES (?, ?, ?)'
   ).bind(userId, name, avatar || null).run()
 
@@ -49,7 +49,7 @@ childrenRoutes.put('/:id', async (c) => {
   const id = parseInt(c.req.param('id'))
   const { name, avatar } = await c.req.json()
 
-  const child = await c.env.DB.prepare(
+  const child = await c.env.db.prepare(
     'SELECT id FROM children WHERE id = ? AND user_id = ?'
   ).bind(id, userId).first()
 
@@ -57,7 +57,7 @@ childrenRoutes.put('/:id', async (c) => {
     return c.json({ message: 'Child not found' }, 404)
   }
 
-  await c.env.DB.prepare(
+  await c.env.db.prepare(
     'UPDATE children SET name = ?, avatar = ? WHERE id = ?'
   ).bind(name, avatar || null, id).run()
 
@@ -68,7 +68,7 @@ childrenRoutes.delete('/:id', async (c) => {
   const userId = c.get('userId')
   const id = parseInt(c.req.param('id'))
 
-  const child = await c.env.DB.prepare(
+  const child = await c.env.db.prepare(
     'SELECT id FROM children WHERE id = ? AND user_id = ?'
   ).bind(id, userId).first()
 
@@ -76,8 +76,8 @@ childrenRoutes.delete('/:id', async (c) => {
     return c.json({ message: 'Child not found' }, 404)
   }
 
-  await c.env.DB.prepare('DELETE FROM score_logs WHERE child_id = ?').bind(id).run()
-  await c.env.DB.prepare('DELETE FROM children WHERE id = ?').bind(id).run()
+  await c.env.db.prepare('DELETE FROM score_logs WHERE child_id = ?').bind(id).run()
+  await c.env.db.prepare('DELETE FROM children WHERE id = ?').bind(id).run()
 
   return c.json({ message: 'Child deleted' })
 })

@@ -109,7 +109,9 @@
           />
         </div>
       </div>
-      <div v-if="records.length === 0 && !loadingMore" class="text-gray-500 text-sm py-4 text-center">{{ t('dashboard.noData') }}</div>
+      <div v-if="records.length === 0 && !loadingMore" class="text-gray-500 text-sm py-4 text-center">
+        {{ t('dashboard.noData') }}
+      </div>
       <ul v-else class="divide-y divide-gray-100">
         <li v-for="r in records" :key="r.id" class="py-3 flex justify-between items-center">
           <div class="min-w-0 flex-1">
@@ -117,7 +119,7 @@
               <span class="font-medium">{{ r.name }}</span>
               <span v-if="r.note" class="text-gray-400 text-xs ml-2">{{ r.note }}</span>
             </div>
-            <div class="text-gray-400 text-xs mt-0.5">{{ formatTime(r.created_at) }}</div>
+            <div class="text-gray-400 text-xs mt-0.5">{{ formatDateTime(r.created_at) }}</div>
           </div>
           <div class="flex items-center space-x-2 ml-2">
             <span :class="r.score > 0 ? 'text-green-600' : 'text-red-600'" class="font-medium text-sm">
@@ -128,15 +130,21 @@
               class="text-red-400 hover:text-red-600 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center"
             >
               <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                />
               </svg>
             </button>
           </div>
         </li>
       </ul>
       <div v-if="loadingMore" class="text-gray-400 text-sm py-3 text-center">{{ t('common.loading') }}</div>
-      <div v-else-if="noMore && records.length > 0" class="text-gray-400 text-xs py-3 text-center">{{ t('points.noMore') }}</div>
+      <div v-else-if="noMore && records.length > 0" class="text-gray-400 text-xs py-3 text-center">
+        {{ t('points.noMore') }}
+      </div>
     </div>
   </div>
 </template>
@@ -146,6 +154,7 @@ import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useChildrenStore } from '@/stores/children'
 import request from '@/utils/request'
+import { getTodayLocal, formatDateTime, getTzOffset } from '@/utils/date'
 
 const { t } = useI18n()
 const childrenStore = useChildrenStore()
@@ -159,7 +168,7 @@ const note = ref('')
 const loading = ref(false)
 const records = ref<{ id: number; name: string; score: number; note: string; created_at: string }[]>([])
 
-const today = new Date().toISOString().slice(0, 10)
+const today = getTodayLocal()
 const selectedDate = ref(today)
 const dateInput = ref<HTMLInputElement | null>(null)
 const page = ref(1)
@@ -177,16 +186,6 @@ const canSubmit = computed(() => {
   if (mode.value === 'preset') return !!selectedPreset.value
   return !!customName.value && customScore.value !== 0
 })
-
-function formatTime(dateStr: string) {
-  const d = new Date(dateStr)
-  const year = d.getFullYear()
-  const month = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  const hours = String(d.getHours()).padStart(2, '0')
-  const minutes = String(d.getMinutes()).padStart(2, '0')
-  return `${year}-${month}-${day} ${hours}:${minutes}`
-}
 
 async function fetchPresets() {
   const data = (await request.get('/presets')) as { presets: { id: number; name: string; score: number }[] }
@@ -210,6 +209,7 @@ async function fetchRecords(reset = true) {
         child_id: childrenStore.currentChildId,
         date_from: selectedDate.value,
         date_to: selectedDate.value,
+        tz_offset: getTzOffset(),
         page: page.value,
         pageSize: 20,
       },
@@ -284,6 +284,9 @@ onUnmounted(() => {
   window.removeEventListener('scroll', handleScroll)
 })
 
-watch(() => childrenStore.currentChildId, () => fetchRecords(true))
+watch(
+  () => childrenStore.currentChildId,
+  () => fetchRecords(true),
+)
 watch(selectedDate, () => fetchRecords(true))
 </script>
