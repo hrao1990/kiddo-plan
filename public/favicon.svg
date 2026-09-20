@@ -1,0 +1,115 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <!-- 天空背景渐变 (原中间柱子的亮青蓝色) -->
+    <linearGradient id="skyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#00E5FF"/>
+      <stop offset="100%" stop-color="#00A8F5"/>
+    </linearGradient>
+
+    <!-- 底部草地渐变 -->
+    <linearGradient id="hillGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#5CD668"/>
+      <stop offset="100%" stop-color="#31A343"/>
+    </linearGradient>
+
+    <!-- 橙色柱状图渐变 -->
+    <linearGradient id="orangeGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFA834"/>
+      <stop offset="100%" stop-color="#F28218"/>
+    </linearGradient>
+
+    <!-- 中间蓝色柱状图渐变 (原天空背景的深蓝色) -->
+    <linearGradient id="blueGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#3495FF"/>
+      <stop offset="100%" stop-color="#1D73E8"/>
+    </linearGradient>
+
+    <!-- 绿色柱状图渐变 -->
+    <linearGradient id="greenGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#4CE085"/>
+      <stop offset="100%" stop-color="#21B55B"/>
+    </linearGradient>
+
+    <!-- 星星黄色主体渐变 -->
+    <linearGradient id="starGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFEC6E"/>
+      <stop offset="100%" stop-color="#FFBD2E"/>
+    </linearGradient>
+
+    <!-- 裁切区域 (App Icon 圆角) -->
+    <clipPath id="appClip">
+      <rect x="32" y="32" width="448" height="448" rx="100" ry="100"/>
+    </clipPath>
+  </defs>
+
+  <!-- 图标基础外框 (使用亮青蓝色) -->
+  <rect x="32" y="32" width="448" height="448" rx="100" ry="100" fill="url(#skyGrad)"/>
+
+  <!-- 裁剪层 -->
+  <g clip-path="url(#appClip)">
+
+    <!-- 右上角闪光线 -->
+    <g fill="#FFC83D">
+      <rect x="302" y="105" width="22" height="44" rx="11" transform="rotate(30 313 127)"/>
+      <rect x="330" y="136" width="20" height="40" rx="10" transform="rotate(50 340 156)"/>
+      <rect x="338" y="182" width="18" height="36" rx="9" transform="rotate(75 347 200)"/>
+    </g>
+
+    <!-- 圆角卡通五角星 -->
+    <path d="
+      M 226,118 
+      C 232,108 244,108 250,118 
+      L 272,156 
+      C 276,163 283,168 291,170 
+      L 334,180 
+      C 345,183 349,195 342,203 
+      L 312,236 
+      C 307,242 304,250 305,258 
+      L 311,301 
+      C 313,312 302,320 292,315 
+      L 253,297 
+      C 246,294 238,294 231,297 
+      L 192,315 
+      C 182,320 171,312 173,301 
+      L 179,258 
+      C 180,250 177,242 172,236 
+      L 142,203 
+      C 135,195 139,183 150,180 
+      L 193,170 
+      C 201,168 208,163 212,156 
+      Z" 
+      fill="url(#starGrad)"/>
+
+    <!-- 星星面部表情 -->
+    <!-- 眼睛 -->
+    <g fill="#42260E">
+      <ellipse cx="204" cy="208" rx="12" ry="15" transform="rotate(-4 204 208)"/>
+      <ellipse cx="266" cy="200" rx="12" ry="15" transform="rotate(-4 266 200)"/>
+    </g>
+    <!-- 眼睛高光 -->
+    <circle cx="201" cy="203" r="4.5" fill="#FFFFFF"/>
+    <circle cx="263" cy="195" r="4.5" fill="#FFFFFF"/>
+
+    <!-- 腮红 -->
+    <ellipse cx="188" cy="230" rx="15" ry="9" fill="#FF7563" opacity="0.8"/>
+    <ellipse cx="282" cy="218" rx="15" ry="9" fill="#FF7563" opacity="0.8"/>
+
+    <!-- 嘴巴 -->
+    <path d="M 222 220 C 222 242, 252 242, 252 220 Z" fill="#42260E"/>
+    <path d="M 227 227 C 230 240, 244 240, 247 227 Z" fill="#FF5E73"/>
+
+    <!-- 柱状图 -->
+    <!-- 左侧绿色小柱 -->
+    <rect x="140" y="320" width="60" height="110" rx="18" fill="url(#greenGrad)"/>
+    
+    <!-- 中间蓝色中柱 (使用沉稳深蓝色，与天空背景清晰区分) -->
+    <rect x="210" y="272" width="68" height="160" rx="20" fill="url(#blueGrad)"/>
+    
+    <!-- 右侧橙色高柱 -->
+    <rect x="286" y="240" width="70" height="190" rx="22" fill="url(#orangeGrad)"/>
+
+    <!-- 底部草地斜坡 -->
+    <path d="M 0 385 Q 256 315 512 395 L 512 512 L 0 512 Z" fill="url(#hillGrad)"/>
+
+  </g>
+</svg>
