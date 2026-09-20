@@ -71,15 +71,19 @@ async function ensureAdmin(env: Bindings) {
   if (flag) return
 
   const row = await env.db.prepare("SELECT COUNT(*) as count FROM users WHERE role = 'admin'").first<{ count: number }>()
-  if ((!row || row.count === 0) && env.ADMIN_USERNAME && env.ADMIN_PASSWORD) {
+  if (row && row.count > 0) {
+    await env.kv.put('admin_initialized', 'true')
+    return
+  }
+
+  if (env.ADMIN_USERNAME && env.ADMIN_PASSWORD) {
     const salt = generateSalt()
     const passwordHash = await hashPassword(env.ADMIN_PASSWORD, salt)
     await env.db.prepare(
       'INSERT OR IGNORE INTO users (username, password_hash, salt, role) VALUES (?, ?, ?, ?)'
     ).bind(env.ADMIN_USERNAME, passwordHash, salt, 'admin').run()
+    await env.kv.put('admin_initialized', 'true')
   }
-
-  await env.kv.put('admin_initialized', 'true')
 }
 
 function generateSalt(): string {
