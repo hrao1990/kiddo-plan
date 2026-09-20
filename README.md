@@ -93,7 +93,8 @@ CREATE INDEX IF NOT EXISTS idx_score_logs_created_at ON score_logs(created_at);
 3. 授权 Cloudflare 访问你的 GitHub
 4. 选择你 Fork 的 `kiddo-plan` 仓库
 5. **构建配置**：
-   - 构建命令：`npm install && pnpm build && cd worker && npm install && npm run build`
+   - 构建命令：`pnpm run build && cd worker && npm install`
+   - 部署命令：`cd worker && npx wrangler deploy`
    - 输出目录：`dist`
    - 根目录：`/`
 6. 点击 **保存并部署**
