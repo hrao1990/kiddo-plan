@@ -1,0 +1,19 @@
+name = "kiddo-plan-worker"
+main = "src/index.ts"
+compatibility_date = "2025-04-01"
+
+[assets]
+directory = "../dist"
+
+[vars]
+MAX_USERS = "50"
+MAX_CHILDREN_PER_USER = "5"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "kiddo-plan-db"
+database_id = "YOUR_D1_DATABASE_ID"
+
+[[kv_namespaces]]
+binding = "KV"
+id = "YOUR_KV_NAMESPACE_ID"
