@@ -100,20 +100,20 @@ CREATE INDEX IF NOT EXISTS idx_score_logs_created_at ON score_logs(created_at);
 7. 部署完成后，点击 Worker 名称进入详情页
 8. 点击 **设置** → **变量和机密**，添加以下变量：
 
-| 变量名 | 值 | 说明 |
-|--------|-----|------|
-| `JWT_SECRET` | 随机32位字符串 | 用于加密登录凭证，可点击生成 |
-| `ADMIN_USERNAME` | admin | 管理员用户名，自定义 |
-| `ADMIN_PASSWORD` | 你的密码 | 管理员密码，自定义 |
-| `MAX_USERS` | 50 | 最多注册用户数 |
-| `MAX_CHILDREN_PER_USER` | 5 | 每个用户最多添加小孩数 |
+| 变量名                  | 值             | 说明                         |
+| ----------------------- | -------------- | ---------------------------- |
+| `JWT_SECRET`            | 随机32位字符串 | 用于加密登录凭证，可点击生成 |
+| `ADMIN_USERNAME`        | admin          | 管理员用户名，自定义         |
+| `ADMIN_PASSWORD`        | 你的密码       | 管理员密码，自定义           |
+| `MAX_USERS`             | 50             | 最多注册用户数               |
+| `MAX_CHILDREN_PER_USER` | 5              | 每个用户最多添加小孩数       |
 
 9. 点击 **设置** → **绑定**，添加以下绑定：
 
-| 绑定类型 | 名称 | 资源 |
-|----------|------|------|
-| D1 数据库 | DB | 选择第三步创建的 `kiddo-plan-db` |
-| KV 命名空间 | KV | 选择第四步创建的 `kiddo-plan-kv` |
+| 绑定类型    | 名称 | 资源                            |
+| ----------- | ---- | ------------------------------- |
+| D1 数据库   | db   | 选择第三步创建的`kiddo-plan-db` |
+| KV 命名空间 | kv   | 选择第四步创建的`kiddo-plan-kv` |
 
 10. 保存后需要重新部署才能生效
 
@@ -136,10 +136,23 @@ pnpm install
 # 启动前端开发服务
 pnpm dev
 
-# 启动 Worker 本地开发（需要先配置 wrangler.toml）
+# 启动 Worker 本地开发
 cd worker
 pnpm install
 pnpm dev
+```
+
+本地开发时，需要在 `worker/wrangler.toml` 中添加数据库绑定（不要提交到 Git）：
+
+```toml
+[[d1_databases]]
+binding = "db"
+database_name = "kiddo-plan-db"
+database_id = "你的D1数据库ID"
+
+[[kv_namespaces]]
+binding = "kv"
+id = "你的KV命名空间ID"
 ```
 
 ## 项目结构
@@ -160,11 +173,13 @@ kiddo-plan/
 ## 功能说明
 
 ### 管理员
+
 - 使用配置的账号登录
 - 管理用户：查看、启用/禁用、删除
 - 也可以像普通用户一样使用所有功能
 
 ### 普通用户
+
 - 注册账号并登录
 - 添加小孩（最多5个，可配置）
 - 设置预设加分/扣分项
