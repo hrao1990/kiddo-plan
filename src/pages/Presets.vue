@@ -52,8 +52,12 @@
           </select>
         </div>
         <div class="flex space-x-2">
-          <button type="submit" class="flex-1 py-3 bg-blue-600 text-white rounded-md text-sm font-medium active:scale-95">
-            {{ t('common.save') }}
+          <button
+            type="submit"
+            :disabled="saving"
+            class="flex-1 py-3 bg-blue-600 text-white rounded-md text-sm font-medium active:scale-95 disabled:opacity-50"
+          >
+            {{ saving ? t('common.loading') : t('common.save') }}
           </button>
           <button type="button" @click="showForm = false" class="px-4 py-3 bg-gray-100 text-gray-600 rounded-md text-sm">
             {{ t('common.cancel') }}
@@ -78,7 +82,7 @@
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                 </svg>
               </button>
-              <button @click="handleDelete(p.id)" class="p-2 text-red-500 hover:bg-red-50 rounded-md min-w-[44px] min-h-[44px] flex items-center justify-center">
+              <button @click="handleDelete(p.id)" :disabled="deletingId === p.id" class="p-2 text-red-500 hover:bg-red-50 rounded-md min-w-[44px] min-h-[44px] flex items-center justify-center disabled:opacity-50">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                 </svg>
@@ -104,7 +108,7 @@
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                 </svg>
               </button>
-              <button @click="handleDelete(p.id)" class="p-2 text-red-500 hover:bg-red-50 rounded-md min-w-[44px] min-h-[44px] flex items-center justify-center">
+              <button @click="handleDelete(p.id)" :disabled="deletingId === p.id" class="p-2 text-red-500 hover:bg-red-50 rounded-md min-w-[44px] min-h-[44px] flex items-center justify-center disabled:opacity-50">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                 </svg>
@@ -138,6 +142,8 @@ const editingPreset = ref<Preset | null>(null)
 const formName = ref('')
 const formScore = ref(10)
 const formCategory = ref('custom')
+const saving = ref(false)
+const deletingId = ref<number | null>(null)
 
 const positivePresets = computed(() => presets.value.filter(p => p.score > 0))
 const negativePresets = computed(() => presets.value.filter(p => p.score < 0))
@@ -156,20 +162,32 @@ function startEdit(preset: Preset) {
 }
 
 async function handleSave() {
-  const payload = { name: formName.value, score: formScore.value, category: formCategory.value }
-  if (editingPreset.value) {
-    await request.put(`/presets/${editingPreset.value.id}`, payload)
-  } else {
-    await request.post('/presets', payload)
+  if (saving.value) return
+  saving.value = true
+  try {
+    const payload = { name: formName.value, score: formScore.value, category: formCategory.value }
+    if (editingPreset.value) {
+      await request.put(`/presets/${editingPreset.value.id}`, payload)
+    } else {
+      await request.post('/presets', payload)
+    }
+    showForm.value = false
+    await fetchPresets()
+  } finally {
+    saving.value = false
   }
-  showForm.value = false
-  await fetchPresets()
 }
 
 async function handleDelete(id: number) {
+  if (deletingId.value !== null) return
   if (confirm(t('presets.confirmDelete'))) {
-    await request.delete(`/presets/${id}`)
-    await fetchPresets()
+    deletingId.value = id
+    try {
+      await request.delete(`/presets/${id}`)
+      await fetchPresets()
+    } finally {
+      deletingId.value = null
+    }
   }
 }
 

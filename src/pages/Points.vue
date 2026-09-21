@@ -127,7 +127,8 @@
             </span>
             <button
               @click="handleDelete(r.id)"
-              class="text-red-400 hover:text-red-600 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center"
+              :disabled="deletingId === r.id"
+              class="text-red-400 hover:text-red-600 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center disabled:opacity-50"
             >
               <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path
@@ -174,6 +175,7 @@ const dateInput = ref<HTMLInputElement | null>(null)
 const page = ref(1)
 const loadingMore = ref(false)
 const noMore = ref(false)
+const deletingId = ref<number | null>(null)
 
 function openDatePicker() {
   nextTick(() => {
@@ -259,9 +261,15 @@ async function handleSubmit() {
 }
 
 async function handleDelete(id: number) {
-  await request.delete(`/points/${id}`)
-  await fetchRecords(true)
-  await childrenStore.fetchChildren()
+  if (deletingId.value !== null) return
+  deletingId.value = id
+  try {
+    await request.delete(`/points/${id}`)
+    await fetchRecords(true)
+    await childrenStore.fetchChildren()
+  } finally {
+    deletingId.value = null
+  }
 }
 
 function handleScroll() {
